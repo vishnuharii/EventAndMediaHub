@@ -1,0 +1,44 @@
+﻿@model IEnumerable<EventAndMediaHub.Models.PhotoDto>
+@{
+    ViewData["Title"] = "Photos List";
+}
+
+<h1>Photos</h1>
+
+<p>
+    <a asp-action="New">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.First().PhotoId)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Title)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Description)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Price)</th>
+            <th>@Html.DisplayNameFor(model => model.First().UploadDate)</th>
+            <th>@Html.DisplayNameFor(model => model.First().UserId)</th>
+            <th>@Html.DisplayNameFor(model => model.First().UserName)</th>
+
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.PhotoId)</td>
+                <td>@Html.DisplayFor(modelItem => item.Title)</td>
+                <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                <td>@Html.DisplayFor(modelItem => item.Price)</td>
+                <td>@Html.DisplayFor(modelItem => item.UploadDate)</td>
+                <td>@Html.DisplayFor(modelItem => item.UserId)</td>
+                <td>@Html.DisplayFor(modelItem => item.UserName)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.PhotoId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.PhotoId">Details</a> |
+                    <a asp-action="ConfirmDelete" asp-route-id="@item.PhotoId">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

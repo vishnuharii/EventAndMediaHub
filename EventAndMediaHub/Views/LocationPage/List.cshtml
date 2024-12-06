@@ -1,0 +1,53 @@
+﻿@model IEnumerable<EventAndMediaHub.Models.LocationDto>
+@{
+    ViewData["Title"] = "List";
+}
+
+<h1>Location</h1>
+
+<p>
+    <a asp-action="New">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.First().LocationId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.First().LocationName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.First().Address)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.First().Capacity)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LocationId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LocationName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Address)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Capacity)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.LocationId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.LocationId">Details</a> |
+                    <a asp-action="ConfirmDelete" asp-route-id="@item.LocationId">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

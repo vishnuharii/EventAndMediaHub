@@ -1,0 +1,63 @@
+﻿@model EventAndMediaHub.Models.PhotoDto
+@{
+    ViewData["Title"] = "Create New Photo";
+}
+
+<h1>Create New Photo</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <!-- Title -->
+            <div class="form-group">
+                <label asp-for="Title" class="control-label">Title:</label>
+                <input asp-for="Title" class="form-control" placeholder="Enter photo title" />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label asp-for="Description" class="control-label">Description:</label>
+                <input asp-for="Description" class="form-control" placeholder="Enter photo description" />
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <!-- Price -->
+            <div class="form-group">
+                <label asp-for="Price" class="control-label">Price:</label>
+                <input asp-for="Price" class="form-control" type="number" step="0.01" placeholder="Enter photo price" />
+                <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
+
+            <!-- UserId -->
+            <div class="form-group">
+                <label asp-for="UserId" class="control-label">User:</label>
+                <input asp-for="UserId" class="form-control" placeholder="Enter user ID" />
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div>
+
+            <!-- UserName -->
+            <div class="form-group">
+                <label asp-for="UserName" class="control-label">User Name:</label>
+                <input asp-for="UserName" class="form-control" placeholder="Enter user name" />
+                <span asp-validation-for="UserName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="List">Back to List</a>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
