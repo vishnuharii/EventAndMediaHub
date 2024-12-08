@@ -1,4 +1,5 @@
 ﻿using EventAndMediaHub.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace EventAndMediaHub.Interface
 {
@@ -6,8 +7,9 @@ namespace EventAndMediaHub.Interface
     {
         Task<IEnumerable<PhotoDto>> ListPhotos();
         Task<PhotoDto> GetPhoto(int id);
-        Task<ServiceResponse> CreatePhoto(PhotoDto photoDto);
+        Task<ServiceResponse> CreatePhoto(PhotoDto photoDto, IFormFile photoFile); // Updated to include file upload
         Task<ServiceResponse> UpdatePhotoDetails(int id, PhotoDto photoDto);
         Task<ServiceResponse> DeletePhoto(int id);
+        Task<ServiceResponse> CreatePhoto(PhotoDto photoDto);
     }
 }

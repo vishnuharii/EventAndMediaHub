@@ -2,22 +2,25 @@
 using EventAndMediaHub.Interface;
 using EventAndMediaHub.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System.IO;
 
 namespace EventAndMediaHub.Services
 {
     public class PhotoService : IPhotoService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public PhotoService(ApplicationDbContext context)
+        public PhotoService(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public async Task<IEnumerable<PhotoDto>> ListPhotos()
         {
-            var photos = await _context.Photos
-                .ToListAsync();  // Fetch photos, without needing to include users explicitly
+            var photos = await _context.Photos.ToListAsync();
 
             var photoDtos = photos.Select(photo => new PhotoDto()
             {
@@ -27,7 +30,8 @@ namespace EventAndMediaHub.Services
                 Price = photo.Price,
                 UploadDate = photo.UploadDate,
                 UserId = photo.UserId,
-                UserName = photo.UserName,  // Assuming UserName is stored correctly already
+                UserName = photo.UserName,
+                PhotoPath = photo.PhotoPath, // Include file path
             }).ToList();
 
             return photoDtos;
@@ -35,8 +39,7 @@ namespace EventAndMediaHub.Services
 
         public async Task<PhotoDto?> GetPhoto(int id)
         {
-            var photo = await _context.Photos
-                .FirstOrDefaultAsync(p => p.PhotoId == id);
+            var photo = await _context.Photos.FirstOrDefaultAsync(p => p.PhotoId == id);
 
             if (photo == null)
             {
@@ -51,17 +54,16 @@ namespace EventAndMediaHub.Services
                 Price = photo.Price,
                 UploadDate = photo.UploadDate,
                 UserId = photo.UserId,
-                UserName = photo.UserName,  // Return the UserName (assuming it is populated correctly)
+                UserName = photo.UserName,
+                PhotoPath = photo.PhotoPath, // Include file path
             };
         }
 
-        public async Task<ServiceResponse> CreatePhoto(PhotoDto photoDto)
+        public async Task<ServiceResponse> CreatePhoto(PhotoDto photoDto, IFormFile photoFile)
         {
             var serviceResponse = new ServiceResponse();
 
-            // Ensure the user exists and retrieve the UserName
-            var user = await _context.Users
-                                     .FirstOrDefaultAsync(u => u.UserId == photoDto.UserId);  // Get user by UserId
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == photoDto.UserId);
             if (user == null)
             {
                 serviceResponse.Status = ServiceResponse.ServiceStatus.Error;
@@ -69,12 +71,18 @@ namespace EventAndMediaHub.Services
                 return serviceResponse;
             }
 
-            // Ensure the provided UserName matches the one from the UserId
-            if (!string.IsNullOrEmpty(photoDto.UserName) && photoDto.UserName != user.UserName)
+            string filePath = null;
+            if (photoFile != null && photoFile.Length > 0)
             {
-                serviceResponse.Status = ServiceResponse.ServiceStatus.Error;
-                serviceResponse.Messages.Add("The provided UserName does not match the UserId.");
-                return serviceResponse;
+                var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploadsFolder);
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + photoFile.FileName;
+                filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await photoFile.CopyToAsync(stream);
+                }
             }
 
             var photo = new Photo()
@@ -84,7 +92,8 @@ namespace EventAndMediaHub.Services
                 Price = photoDto.Price,
                 UploadDate = photoDto.UploadDate,
                 UserId = photoDto.UserId,
-                UserName = user.UserName,  // Automatically set UserName based on UserId
+                UserName = user.UserName,
+                PhotoPath = filePath != null ? $"/uploads/{Path.GetFileName(filePath)}" : null,
             };
 
             _context.Photos.Add(photo);
@@ -109,40 +118,19 @@ namespace EventAndMediaHub.Services
                 return serviceResponse;
             }
 
-            // If UserId is being updated, fetch the new UserName
-            if (photoDto.UserId != 0 && photoDto.UserId != existingPhoto.UserId)
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == photoDto.UserId);
+            if (user == null)
             {
-                var user = await _context.Users
-                                         .FirstOrDefaultAsync(u => u.UserId == photoDto.UserId); // Fetch the user based on UserId
-                if (user == null)
-                {
-                    serviceResponse.Status = ServiceResponse.ServiceStatus.Error;
-                    serviceResponse.Messages.Add("User not found.");
-                    return serviceResponse;
-                }
-                existingPhoto.UserId = photoDto.UserId;
-                existingPhoto.UserName = user.UserName; // Automatically update the UserName based on the new UserId
+                serviceResponse.Status = ServiceResponse.ServiceStatus.Error;
+                serviceResponse.Messages.Add("User not found.");
+                return serviceResponse;
             }
 
-            // If UserName is being updated, verify it exists in the Users table
-            if (!string.IsNullOrEmpty(photoDto.UserName) && photoDto.UserName != existingPhoto.UserName)
-            {
-                var user = await _context.Users
-                                         .FirstOrDefaultAsync(u => u.UserName == photoDto.UserName); // Find user by UserName
-                if (user == null)
-                {
-                    serviceResponse.Status = ServiceResponse.ServiceStatus.Error;
-                    serviceResponse.Messages.Add("UserName does not exist.");
-                    return serviceResponse;
-                }
-                existingPhoto.UserName = photoDto.UserName; // Update the UserName if it exists
-            }
-
-            // Update other properties
             existingPhoto.Title = photoDto.Title ?? existingPhoto.Title;
             existingPhoto.Description = photoDto.Description ?? existingPhoto.Description;
             existingPhoto.Price = photoDto.Price != 0 ? photoDto.Price : existingPhoto.Price;
-            existingPhoto.UploadDate = photoDto.UploadDate != default ? photoDto.UploadDate : existingPhoto.UploadDate;
+            existingPhoto.UserId = photoDto.UserId;
+            existingPhoto.UserName = user.UserName;
 
             await _context.SaveChangesAsync();
 
@@ -164,6 +152,15 @@ namespace EventAndMediaHub.Services
                 return serviceResponse;
             }
 
+            if (!string.IsNullOrEmpty(photo.PhotoPath))
+            {
+                var fullPath = Path.Combine(_webHostEnvironment.WebRootPath, photo.PhotoPath.TrimStart('/'));
+                if (File.Exists(fullPath))
+                {
+                    File.Delete(fullPath);
+                }
+            }
+
             _context.Photos.Remove(photo);
             await _context.SaveChangesAsync();
 
@@ -171,6 +168,11 @@ namespace EventAndMediaHub.Services
             serviceResponse.Messages.Add("Photo deleted successfully.");
 
             return serviceResponse;
+        }
+
+        public Task<ServiceResponse> CreatePhoto(PhotoDto photoDto)
+        {
+            throw new NotImplementedException();
         }
     }
 }

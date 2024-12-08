@@ -36,17 +36,34 @@ namespace EventAndMediaHub.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(PhotoDto photoDto)
+        public async Task<IActionResult> CreatePhoto(PhotoDto photoDto)
         {
-            var response = await _photoService.CreatePhoto(photoDto);
-
-            if (response.Status == ServiceResponse.ServiceStatus.Created)
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction("Details", "PhotoPage", new { id = response.CreatedId });
+                return View(photoDto);
             }
 
-            return View("Error", new ErrorViewModel { Errors = response.Messages });
+            // Handle the file upload
+            IFormFile? photoFile = photoDto.Photo;
+            if (photoFile != null)
+            {
+                var serviceResponse = await _photoService.CreatePhoto(photoDto, photoFile);
+                if (serviceResponse.Status == ServiceResponse.ServiceStatus.Created)
+                {
+                    return RedirectToAction("Index");
+                }
+
+                ModelState.AddModelError("", "An error occurred while creating the photo.");
+            }
+            else
+            {
+                ModelState.AddModelError("Photo", "Please upload a valid photo.");
+            }
+
+            return View(photoDto);
         }
+
+
 
         [HttpGet]
         public async Task<IActionResult> Edit(int id)

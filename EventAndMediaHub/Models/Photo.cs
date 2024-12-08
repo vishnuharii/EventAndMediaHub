@@ -14,6 +14,7 @@ namespace EventAndMediaHub.Models
         public virtual User Users { get; set; } = null!; 
         public int UserId { get; set; }
         public string UserName { get; set; }
+        public string? PhotoPath { get; internal set; }
     }
 
     public class PhotoDto
@@ -26,5 +27,11 @@ namespace EventAndMediaHub.Models
         public DateTime UploadDate { get; set; }
         public int UserId { get; set; }
         public string UserName { get; set; }
+        public string? PhotoPath { get; internal set; }
+
+
+
+        public IFormFile? Photo { get; set; } // Add this property for file uploads
+
     }
 }
